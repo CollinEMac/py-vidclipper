@@ -20,13 +20,13 @@ ap.add_argument(
 )
 # optional
 ap.add_argument(
-    '-w', '--window-slide', type=int,
+    '-w', '--window-slide', type=float,
     help="""Time in seconds to move start/end times. Use a negative number to 
          slide backwards.
          """
 )
 ap.add_argument(
-    '-p', '--window-pad', type=int,
+    '-p', '--window-pad', type=float,
     help='Time in seconds to pad the window. Use a negative number to shrink.'
 )
 ap.add_argument(
@@ -59,7 +59,7 @@ ap.add_argument(
 )
 args = ap.parse_args()
 
-srtFile = open(args.srtFile)
+srtFile = open(args.srtFile, encoding='utf-8-sig')
 
 subs = srt.parse(srtFile)
 
@@ -98,7 +98,7 @@ for sub in subs:
     if len(sub.matchIndexes) > 0:
         matches.append(sub)
 
-if len(matches) > 1:
+if len(matches) >= 1:
     if args.mode is None or args.mode.lower() == 'first':
         matches = [matches[0]]
 
@@ -133,6 +133,35 @@ if len(matches) > 1:
     selected = input(
         'Specify selected matches as a comma separated list: '
     ).split(',')
+
+if len(matches) >= 1:
+  if args.mode is None or args.mode.lower() == 'first':
+    matches = [matches[0]]
+
+  if args.mode.lower() == 'interactive':
+    cprint('Found matches:', 'cyan')
+    cprint('---------------------', attrs=['bold'])
+
+    for i in range(len(matches)):
+      sub = matches[i]
+
+      line = colored(f'[{i}]', 'cyan') + ' ' \
+           + str(sub.start) + colored(' --> ', 'cyan') + str(sub.end) \
+           + os.linesep
+      
+      for i in range(len(sub.content)):
+        for mi in sub.matchIndexes:
+          if i in range(mi[0], mi[1]):
+            line += colored(sub.content[i], 'red')
+            break
+          else:
+            if sub.matchIndexes.index(mi) == len(sub.matchIndexes)-1:
+              line += sub.content[i]
+
+      print(line)
+      cprint('---------------------', attrs=['bold'])
+
+    selected = input('Specify selected matches as a comma separated list: ').split(',')
 
     matches = [matches[int(i)] for i in selected]
 else:
